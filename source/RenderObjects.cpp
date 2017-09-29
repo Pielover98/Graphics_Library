@@ -1,16 +1,13 @@
 #define GLM_FORCE_SWIZZLE
 
+#include "graphics/glinc.h"
 #include "graphics\RenderObjects.h"
-#include "graphics\glinc.h"
 #include "graphics\Vertex.h"
 
-#include "glm\ext.hpp"
-
-
-
-#ifdef _DEBUG
+#ifdef  _DEBUG
 #include <iostream>
-#endif
+#endif //  _DEBUG
+
 
 glm::vec4 calcTangent(const Vertex &v0, const Vertex &v1, const Vertex &v2)
 {
@@ -18,82 +15,77 @@ glm::vec4 calcTangent(const Vertex &v0, const Vertex &v1, const Vertex &v2)
 	glm::vec4 p1 = v1.position - v0.position;
 	glm::vec4 p2 = v2.position - v0.position;
 
-
-	glm::vec2 t1 = v1.texCoord - v0.texCoord;
-	glm::vec2 t2 = v2.texCoord - v0.texCoord;
-
+	glm::vec2 t1 = v1.UV - v0.UV;
+	glm::vec2 t2 = v2.UV - v0.UV;
 
 	return glm::normalize((p1*t2.y - p2*t1.y) / (t1.x*t2.y - t1.y*t2.x));
+	//UV.x will follow the tangents
+	//UV.y will follow the bitangents
+
 }
 
-void solveTangents(Vertex * v, size_t vsize, const unsigned * idxs, size_t isize)
+void solveTangents(Vertex * v, size_t vsize, const unsigned* idxs, size_t isize)
 {
-
 	for (int i = 0; i < isize; i += 3)
 	{
-		glm::vec4 T = calcTangent(v[idxs[i + 0]], v[idxs[i + 1]], v[idxs[i + 2]]);
+		glm::vec4 T = calcTangent(v[idxs[0]], v[idxs[1]], v[idxs[2]]);
 
-		
-		for (int j = 0; j < 3; ++j)
+		for (int j = 0; j < 3; j++)
+		{
 			v[idxs[i + j]].tangent = glm::normalize(T + v[idxs[i + j]].tangent);
+		}
 	}
 
-
-	for (int i = 0; i < vsize; ++i)
-		v[i].bitangent = glm::vec4(glm::cross(v[i].normal.xyz(), v[i].tangent.xyz()), 0);
+	for (int i = 0; i < vsize; i++)
+	{
+		v[i].bitangent = glm::vec4(glm::cross(v[i].normals.xyz(), v[i].tangent.xyz()), 0);
+	}
 }
 
-Geometry makeGeometry(const Vertex * vertices, size_t vsize, const unsigned * indices, size_t isize)
+Geometry makeGeometry(const Vertex * vertices, size_t vsize, const unsigned * indicies, size_t isize)
 {
 	Geometry retval = { 0,0,0,isize };
 
-
+	//Declare our openGL objects and acquire handles
 	glGenBuffers(1, &retval.vbo);
 	glGenBuffers(1, &retval.ibo);
-	glGenVertexArrays(1, &retval.handle); 
+	glGenVertexArrays(1, &retval.handle);
 
+	// scope the variavles
 	glBindVertexArray(retval.handle);
 	glBindBuffer(GL_ARRAY_BUFFER, retval.vbo);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, retval.ibo);
 
-	
+	//init all buffers
 	glBufferData(GL_ARRAY_BUFFER, vsize * sizeof(Vertex), vertices, GL_STATIC_DRAW);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, isize * sizeof(unsigned), indices, GL_STATIC_DRAW);
-
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, isize * sizeof(unsigned), indicies, GL_STATIC_DRAW);
 
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
-
-
 	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)16);
-
-
 	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)32);
-
-
 	glEnableVertexAttribArray(3);
-	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)40);
-
-	
 	glEnableVertexAttribArray(4);
-	glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)56);
-
-
 	glEnableVertexAttribArray(5);
-	glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)72);
 
-	
+	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
+	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)16); // bytes
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)32); // bytes
+	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)40); // bytes
+	glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)56); // bytes
+	glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)72); // bytes
+
+
 	glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
 
 	return retval;
 }
 
 void freeGeometry(Geometry & g)
 {
+
 	glDeleteBuffers(1, &g.vbo);
 	glDeleteBuffers(1, &g.ibo);
 	glDeleteVertexArrays(1, &g.handle);
@@ -101,24 +93,27 @@ void freeGeometry(Geometry & g)
 
 }
 
-Shader makeShader(const char * vsource, const char * fsource)
+
+
+Shader MakeShader(const char * vert_src, const char * frag_src)
 {
 	Shader retval = { 0 };
 
-
 	retval.handle = glCreateProgram();
+
 	unsigned vs = glCreateShader(GL_VERTEX_SHADER);
 	unsigned fs = glCreateShader(GL_FRAGMENT_SHADER);
 
-
-	glShaderSource(vs, 1, &vsource, 0);
-	glShaderSource(fs, 1, &fsource, 0);
+	glShaderSource(vs, 1, &vert_src, 0);
+	glShaderSource(fs, 1, &frag_src, 0);
 
 	glCompileShader(vs);
-#ifdef _DEBUG
-	GLint successVS = GL_FALSE;
-	glGetShaderiv(vs, GL_COMPILE_STATUS, &successVS);
-	if (successVS == GL_FALSE)
+	glCompileShader(fs);
+
+#ifdef  _DEBUG
+	GLint success = GL_FALSE;
+	glGetShaderiv(vs, GL_COMPILE_STATUS, &success);
+	if (success == GL_FALSE)
 	{
 		int length = 0;
 		glGetShaderiv(vs, GL_INFO_LOG_LENGTH, &length);
@@ -126,14 +121,12 @@ Shader makeShader(const char * vsource, const char * fsource)
 		glGetShaderInfoLog(vs, length, 0, log);
 		std::cerr << log << std::endl;
 		delete[] log;
-	}
-#endif _DEBUG
 
-	glCompileShader(fs);
-#ifdef _DEBUG
-	GLint successFS = GL_FALSE;
-	glGetShaderiv(fs, GL_COMPILE_STATUS, &successFS);
-	if (successFS == GL_FALSE)
+	}
+
+	success = GL_FALSE;
+	glGetShaderiv(fs, GL_COMPILE_STATUS, &success);
+	if (success == GL_FALSE)
 	{
 		int length = 0;
 		glGetShaderiv(fs, GL_INFO_LOG_LENGTH, &length);
@@ -142,16 +135,15 @@ Shader makeShader(const char * vsource, const char * fsource)
 		std::cerr << log << std::endl;
 		delete[] log;
 	}
-#endif _DEBUG
-
-
+#endif //  _DEBUG
 
 	glAttachShader(retval.handle, vs);
 	glAttachShader(retval.handle, fs);
 	glLinkProgram(retval.handle);
 
-#ifdef _DEBUG
-	GLint success = GL_FALSE;
+
+#ifdef  _DEBUG
+	success = GL_FALSE;
 	glGetProgramiv(retval.handle, GL_LINK_STATUS, &success);
 	if (success == GL_FALSE)
 	{
@@ -161,50 +153,14 @@ Shader makeShader(const char * vsource, const char * fsource)
 		glGetProgramInfoLog(retval.handle, length, 0, log);
 		std::cerr << log << std::endl;
 		delete[] log;
+
 	}
-#endif _DEBUG
+
+#endif //  _DEBUG
 
 
 	glDeleteShader(vs);
 	glDeleteShader(fs);
-
-	return retval;
-}
-
-Shader makeUpdateShader(const char * vert_src)
-{
-	Shader retval = { 0 };
-
-
-	retval.handle = glCreateProgram();
-	unsigned vs = glCreateShader(GL_VERTEX_SHADER);
-
-	glShaderSource(vs, 1, &vert_src, 0);
-
-	glCompileShader(vs);
-#ifdef _DEBUG
-	GLint successVS = GL_FALSE;
-	glGetShaderiv(vs, GL_COMPILE_STATUS, &successVS);
-	if (successVS == GL_FALSE)
-	{
-		int length = 0;
-		glGetShaderiv(vs, GL_INFO_LOG_LENGTH, &length);
-		char *log = new char[length];
-		glGetShaderInfoLog(vs, length, 0, log);
-		std::cerr << log << std::endl;
-		delete[] log;
-	}
-#endif _DEBUG
-
-	glAttachShader(retval.handle, vs);
-
-	
-	glLinkProgram(retval.handle);
-
-
-	glDeleteShader(vs);
-
-
 
 	return retval;
 }
@@ -215,65 +171,50 @@ void freeShader(Shader &s)
 	s = { 0 };
 }
 
-ParticleBuffer makeParticleBuffer(const ParticleVertex * parts, size_t psize)
+// 4 RGBO = 4 channels
+// 512x512 image = 262144 pixels * 4 channels = 1million
+
+Texture MakeTexture(unsigned w, unsigned h, unsigned c, const void* pixels, bool isFloat)
 {
-	ParticleBuffer retval = { 0 };
-	retval.size = psize;
 
-
-	glGenBuffers(1, &retval.vbo[0]);
-	glGenBuffers(1, &retval.vbo[1]);
-
-	glGenVertexArrays(1, &retval.handle[0]);
-	glGenVertexArrays(1, &retval.handle[0]); 
-
-	glBindVertexArray(retval.handle[0]);
-	glBindVertexArray(retval.handle[1]);
-	glBindBuffer(GL_ARRAY_BUFFER, retval.vbo[0]);
-	glBindBuffer(GL_ARRAY_BUFFER, retval.vbo[1]);
-
-
-	glBufferData(GL_ARRAY_BUFFER, psize * sizeof(ParticleVertex), parts, GL_STATIC_DRAW);
-
-
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(ParticleVertex), (void*)0);
-
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(ParticleVertex), (void*)16);
-
-	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(ParticleVertex), (void*)28);
-
-
-	glBindVertexArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-	return retval;
-}
-
-Texture makeTexture(unsigned w, unsigned h, unsigned c, const void * pixels, bool isFloat)
-{
 	Texture retval = { 0 };
 
-	GLenum f = 0, i = 0;
+	GLenum f = 0, i = 0; // externam and internal
 
-	switch (c) {
-	case 0: f = GL_DEPTH_COMPONENT; i = GL_DEPTH24_STENCIL8; break;
-	case 1: f = GL_RED;				i = GL_R32F; break;
-	case 2: f = GL_RG;				i = GL_RG32F; break;
-	case 3: f = GL_RGB;				i = GL_RGB32F; break;
-	case 4: f = GL_RGBA;			i = GL_RGBA32F; break;
+	switch (c)
+	{
+	case 0:
+		f = GL_DEPTH_COMPONENT;
+		i = GL_DEPTH24_STENCIL8;
+		break;
+	case 1:
+		f = GL_RED;
+		i = GL_R32F;
+		break;
+	case 2:
+		f = GL_RG;
+		i = GL_RG32F;
+		break;
+	case 3:
+		f = GL_RGB;
+		i = GL_RGB32F;
+		break;
+	case 4:
+		f = GL_RGBA;
+		i = GL_RGBA32F;
+		break;
 	}
 
 	glGenTextures(1, &retval.handle);
 	glBindTexture(GL_TEXTURE_2D, retval.handle);
 
+	i = ((isFloat || c == 0) ? i : f);
+
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, ((isFloat || c == 0) ? i : f), w, h, 0, f,
-		(isFloat ? GL_FLOAT : GL_UNSIGNED_BYTE), pixels);
+	glTexImage2D(GL_TEXTURE_2D, 0, i, w, h, 0, f, (isFloat ? GL_FLOAT : GL_UNSIGNED_BYTE), pixels);
+
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 
@@ -286,31 +227,31 @@ void freeTexture(Texture & t)
 	t = { 0 };
 }
 
-Framebuffer makeFramebuffer(unsigned w, unsigned h, unsigned c, bool hasDepth,
-	unsigned nTargets, unsigned nFloatTargets)
+Framebuffer makeFramebuffer(unsigned w, unsigned h, unsigned c, bool hasDepth, unsigned nColorTargets, unsigned nFloatTargets)
 {
-	Framebuffer retval = { 0,w,h, nTargets + nFloatTargets ,0,{ 0 } };
-
+	Framebuffer retval = { 0,w,h,0,0,{ 0 } };
+	retval.nTargets = nColorTargets + nFloatTargets;
 
 	glGenFramebuffers(1, &retval.handle);
 	glBindFramebuffer(GL_FRAMEBUFFER, retval.handle);
+	if (hasDepth)
+	{
+		retval.depthTarget = MakeTexture(w, h, 0, 0, 0);
 
-	if (hasDepth) {
-		retval.depthTarget = makeTexture(w, h, 0, 0, 0);
-		glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-			retval.depthTarget.handle, 0);
+		glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, retval.depthTarget.handle, 0);
 	}
 
-	const GLenum attachments[8] = {
-		GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2,
+	const GLenum attachments[8] =
+	{ GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2,
 		GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4, GL_COLOR_ATTACHMENT5,
 		GL_COLOR_ATTACHMENT6, GL_COLOR_ATTACHMENT7 };
 
-	for (int i = 0; i < retval.nTargets && i < 8; ++i)
+	for (int i = 0; i < retval.nTargets && i < 8; i++)
 	{
-		retval.targets[i] = makeTexture(w, h, c, 0, i >= nTargets);
-		glFramebufferTexture(GL_FRAMEBUFFER, attachments[i],
-			retval.targets[i].handle, 0);
+
+		retval.targets[i] = MakeTexture(w, h, c, 0, i >= nColorTargets);
+		glFramebufferTexture(GL_FRAMEBUFFER, attachments[i], retval.targets[i].handle, 0);
+
 	}
 
 	glDrawBuffers(retval.nTargets, attachments);
@@ -319,67 +260,40 @@ Framebuffer makeFramebuffer(unsigned w, unsigned h, unsigned c, bool hasDepth,
 	return retval;
 }
 
-void FreeFramebuffer(Framebuffer & fb)
+ParticleBuffer makeParticleBuffer(const ParticleBuffer * parts, size_t psize)
 {
-	for (unsigned i = 0; i < fb.nTargets; ++i)
-		freeTexture(fb.targets[i]);
 
-	glDeleteFramebuffers(1, &fb.handle);
-	fb = { 0,0,0,0 };
-}
+	ParticleBuffer Retval = { 0 };
 
-CubeTexture makeCubeMap(unsigned w, unsigned h, unsigned c, const void ** pixels, bool isFloat)
-{
-	CubeTexture retval = { 0 };
-
-	GLenum f = 0, i = 0;
-
-	switch (c) {
-	case 0: f = GL_DEPTH_COMPONENT; i = GL_DEPTH24_STENCIL8; break;
-	case 1: f = GL_RED;				i = GL_R32F; break;
-	case 2: f = GL_RG;				i = GL_RG32F; break;
-	case 3: f = GL_RGB;				i = GL_RGB32F; break;
-	case 4: f = GL_RGBA;			i = GL_RGBA32F; break;
-	}
-
-
-	glGenTextures(1, &retval.handle);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, retval.handle);
+	const int ParticleCount = 100000;
 
 
 
+	// Create VBO for input on even-numbered frames and output on odd-numbered frames:
 
-	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, ((isFloat || c == 0) ? i : f),
-		w, h, 0, f, (isFloat ? GL_FLOAT : GL_UNSIGNED_BYTE), pixels[0]);
-	glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 0, ((isFloat || c == 0) ? i : f),
-		w, h, 0, f, (isFloat ? GL_FLOAT : GL_UNSIGNED_BYTE), pixels[1]);
-
-
-	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, 0, ((isFloat || c == 0) ? i : f),
-		w, h, 0, f, (isFloat ? GL_FLOAT : GL_UNSIGNED_BYTE), pixels[2]);
-	glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, ((isFloat || c == 0) ? i : f),
-		w, h, 0, f, (isFloat ? GL_FLOAT : GL_UNSIGNED_BYTE), pixels[3]);
+	glGenBuffers(1, &Retval.vbo[0]);
+	glBindBuffer(GL_ARRAY_BUFFER, Retval.vbo[0]);
+	glGenTransformFeedbacks(0, &Retval.handle[0]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(parts) * psize, &psize, GL_STREAM_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 
-	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, 0, ((isFloat || c == 0) ? i : f),
-		w, h, 0, f, (isFloat ? GL_FLOAT : GL_UNSIGNED_BYTE), pixels[4]);
-	glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, ((isFloat || c == 0) ? i : f),
-		w, h, 0, f, (isFloat ? GL_FLOAT : GL_UNSIGNED_BYTE), pixels[5]);
 
+	// Create VBO for output on even-numbered frames and input on odd-numbered frames:
 
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	glGenBuffers(1, &Retval.vbo[1]);
+	glBindBuffer(GL_ARRAY_BUFFER, Retval.vbo[1]);
+	glGenTransformFeedbacks(0, &Retval.handle[1]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(parts) * psize, &psize, GL_STREAM_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-
-	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
-
-	return retval;
+	return Retval;
 }
 
 
 
+Shader makeUpdateShader(const char * vert_src)
+{
 
-
+	return Shader();
+}

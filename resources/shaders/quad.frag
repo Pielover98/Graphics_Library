@@ -1,33 +1,37 @@
-#version 450
+#version 450 
 
 in vec2 vUV;
 
-layout (location = 0) uniform sampler2D map1;
-layout (location = 1) uniform sampler2D map2;
+layout(location = 0) uniform sampler2D map;
+
+layout(location = 1) uniform sampler2D map2;
 
 out vec4 outColor;
 
-vec4 crossblur(in sampler2D map, in vec2 uv, in int it);
+vec4 crossblur(in sampler2D map, in vec2 uv, int it);
+
 vec4 sobel(in sampler2D map, in vec2 UV);
 
 void main()
-{	
-	outColor = (sin(8)*crossblur(map2, vUV, 64) + sin(3)*sobel(map1, vUV));
+{
+	outColor = 4*sobel(map,vUV) + crossblur(map,vUV,8);
 }
 
-vec4 crossblur(in sampler2D map, in vec2 uv, in int it)
+vec4 crossblur(in sampler2D map, in vec2 uv, int it)
 {
-	vec2 sDim = textureSize(map, 0).xy;
+
+	vec2 sDim = textureSize(map,0).xy;
 	vec4 retval = vec4(0,0,0,0);
-	
-	for(int i = -it; i <= it; ++i)
+	for(int i = -it; i <= it; i++)
 	{
-		retval += texture(map, uv + vec2(i,0)/sDim);
-		retval += texture(map, uv + vec2(0,i)/sDim);
+		retval += texture(map,uv + vec2(i,0)/sDim);
+		retval += texture(map,uv + vec2(i,0)/sDim);
 	}
-	
-	return retval / (it * 4);
+
+	return retval / (it*4);
+
 }
+
 
 vec4 sobel(in sampler2D map, in vec2 UV)
 {

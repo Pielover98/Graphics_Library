@@ -21,7 +21,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{2C69726D-3AF8-4309-984E-25C9795E6383}</ProjectGuid>
     <RootNamespace>Graphics_Library</RootNamespace>
-    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.15063.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -130,20 +130,28 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="source\Assets.cpp" />
+    <ClCompile Include="source\Bboadlist.cpp" />
+    <ClCompile Include="source\BboardTechnique.cpp" />
     <ClCompile Include="source\Gameobjects.cpp" />
     <ClCompile Include="source\load.cpp" />
     <ClCompile Include="source\context.cpp" />
     <ClCompile Include="source\draw.cpp" />
     <ClCompile Include="source\genShape.cpp" />
+    <ClCompile Include="source\Particles.cpp" />
     <ClCompile Include="source\RenderObjects.cpp" />
     <ClCompile Include="tests\10-Deffered\main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\graphics\Assets.h" />
+    <ClInclude Include="include\graphics\BboardList.h" />
+    <ClInclude Include="include\graphics\BboardTechnique.h" />
     <ClInclude Include="include\graphics\context.h" />
     <ClInclude Include="include\graphics\draw.h" />
     <ClInclude Include="include\graphics\Gameobjects.h" />
     <ClInclude Include="include\graphics\genShape.h" />
     <ClInclude Include="include\graphics\load.h" />
+    <ClInclude Include="include\graphics\Particles.h" />
     <ClInclude Include="include\graphics\RenderObjects.h" />
     <ClInclude Include="include\graphics\vertex.h" />
     <ClInclude Include="include\graphics\glinc.h" />

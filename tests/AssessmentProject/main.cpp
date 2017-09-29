@@ -4,92 +4,88 @@
 #include "glm\ext.hpp"
 #include "graphics\Context.h"
 #include "graphics\draw.h"
+#include <iostream>
+#include <vector>
+#include "glm\glm.hpp"
+#include "graphics\Assets.h"
+// Std. Includes
+#include <string>
+
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
+void SetSkybox();
+
+std::vector<std::string> faces;
+
+Assets loader;
+
+Geometry  sky_geo;
+Skybox    sky_map;
+glm::mat4 sky_model;
+Shader	  sky_shader;
+
+
+
 
 void main()
 {
 	Context context;
 	context.init(1280, 720);
 
-	Geometry cubeGeo = loadGeometry("../../resources/models/cube.obj");
-	glm::mat4 model;
+	SetSkybox();
 
-	CubeTexture cubeMap = loadCubeMap(
-		"../../resources/textures/stormydays_ft.tga",
-		"../../resources/textures/stormydays_bk.tga",
-		"../../resources/textures/stormydays_up.tga",
-		"../../resources/textures/stormydays_dn.tga",
-		"../../resources/textures/stormydays_rt.tga",
-		"../../resources/textures/stormydays_lf.tga"
-	);
-
-	CubeTexture cityMap = loadCubeMap(
-		"../../resources/textures/sincity_ft.tga",
-		"../../resources/textures/sincity_bk.tga",
-
-		"../../resources/textures/sincity_up.tga",
-		"../../resources/textures/sincity_dn.tga",
-
-		"../../resources/textures/sincity_rt.tga",
-		"../../resources/textures/sincity_lf.tga"
-	);
-
-	Shader cubeShader = loadShader(
-		"../../resources/shaders/cubemap.vert",
-		"../../resources/shaders/cubemap.frag");
-
-	Shader reflectShader = loadShader(
-		"../../resources/shaders/reflectSky.vert",
-		"../../resources/shaders/reflectSky.frag");
-
-	Shader refractShader = loadShader(
-		"../../resources/shaders/refractSky.vert",
-		"../../resources/shaders/refractSky.frag");
-
-	// Reflection test
-	Geometry ss = loadGeometry("../../resources/models/soulspear.obj");
-	glm::mat4 ss_model;
-	//////////////////////////
-	// Camera Data
+	// Camera
 	Camera cam;
-	//cam.view = glm::lookAt(
-	//	glm::vec3(1, 1, 0),		// eye
-	//	glm::vec3(0, 1, 0),		// center
-	//	glm::vec3(0, 1, 0));	// up
+	cam.view;// = glm::lookAt(glm::vec3(0, 2, 5), glm::vec3(0, 1, 0), glm::vec3(0, 1, 0));
 	cam.proj = glm::perspective(45.f, 1280.f / 720.f, 1.f, 100.f);
 
-	//////////////////////////
-	// Light
-	StandardLight l;
-	l.dir = glm::normalize(glm::vec3(.2, -1, -1));
-	l.color = glm::vec4(1.0, .5, 1.0, 1);
-	l.intensity = 4.0;
-	l.ambient = glm::vec4(.2, .5, .1, 1);
-	l.type = 0;
+	Framebuffer screen = { 0,1280,720 };
 
-	Framebuffer screen = { 0, 1280, 720 };
-
+	int loc = 0, slot = 0;
 	while (context.step())
 	{
+
+
+
 		float time = context.getTime();
-		int loc = 0, slot = 0;
 
-		model = glm::scale(glm::vec3(10, 10, 10));
-		//model = glm::rotate(time/20, glm::vec3(0,1,0)) * glm::scale(glm::vec3(10, 10, 10));
-		ss_model = glm::translate(glm::vec3(0, -2, -4)) * glm::rotate(time / 5, glm::vec3(0, 1, 0));
+		sky_model = glm::rotate(time*1.0f, glm::vec3(0, 1, 0)) * glm::scale(glm::vec3(20, 20, 20));
 
-		setFlags(RenderFlag::DEPTH);
 		clearFramebuffer(screen);
+		setFlags(RenderFlag::DEPTH);
+		loc = slot = 0;
 
-		loc = 0, slot = 0;
-		setUniforms(refractShader, loc, slot, cam, ss_model, cubeMap);
-		s0_draw(screen, refractShader, ss);
 
-		loc = 0, slot = 0;
-		setUniforms(cubeShader, loc, slot, cam, model, cubeMap);
-		s0_draw(screen, cubeShader, cubeGeo);
-
+		setUniforms(sky_shader, loc, slot, cam.proj, cam.view, sky_model, sky_map);
+		s0_draw(screen, sky_shader, sky_geo);
 	}
-
-
 	context.term();
 }
+
+
+void SetSkybox()
+{
+	faces =
+	{
+		"../../resources/textures/stormydays_ft.tga",
+		"../../resources/textures/stormydays_bk.tga",
+
+
+		"../../resources/textures/stormydays_up.tga",
+		"../../resources/textures/stormydays_dn.tga",
+
+		"../../resources/textures/stormydays_rt.tga",
+		"../../resources/textures/stormydays_lf.tga",
+
+	};
+
+	sky_geo = loader.loadGeo("cube.obj");
+	sky_map = loadCubemap(faces);
+	sky_model = glm::scale(glm::vec3(20, 20, 20));
+	sky_shader = loader.loadShaderAsset("SkyBoxCubeMap.vert", "SkyBoxCubeMap.frag");
+
+}
+

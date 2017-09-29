@@ -4,7 +4,7 @@ out vec4 outColor;
 
 // input from frag shader
 in vec2 vUV;
-in vec4 vPos;
+in vec3 vPos;
 in mat4 vTBN;
 
 // Camera
@@ -23,7 +23,7 @@ layout(location =  9) uniform float l_intensity;
 layout(location = 10) uniform vec4  l_ambient;
 layout(location = 11) uniform int   light_type; // 0=dir, 1=pnt
 
-//output variables // 4 targets, 3 color, 1 float
+//Output Variables // 4 targets, 3 color and 1 float
 layout(location = 0) out vec4 outFinal;
 layout(location = 1) out vec4 outDiffuse;
 layout(location = 2) out vec4 outSpecular;
@@ -31,8 +31,8 @@ layout(location = 3) out vec4 outNormal;
 
 // illumination model factors
 float calc_lambert(in vec3 N, in vec3 L);
+float calc_phong(in vec3 N, in vec3 L, in vec3 V, in float SpecPower);
 // PHONG
-float calc_phong(in vec3 N, in vec3 L, in vec3 V, in float specPower);
 // AMBIENT
 // ATTENUATION
 
@@ -40,37 +40,36 @@ void main()
 {
 	// Read surface data
 	vec3 normal  = (vTBN*(2*texture(normalMap, vUV)-1)).xyz;	
-	vec4 diffuse = texture(diffuseMap, vUV);	// SPLIT VIEW COMPARISON, REMOVE LATER
+	vec4 diffuse = texture(diffuseMap, vUV);
 	vec4 specular = texture(specularMap, vUV);
-	
-	//if(vPos.x < 0) 
-	//	normal = vTBN[2].xyz;
+	// SPLIT VIEW COMPARISON, REMOVE LATER
+	//if(vPos.x < 0) normal = vTBN[2].xyz;
 
 	// calculate light direction
 	vec3 lDir = l_data;
 	float attenuation = 1;
 	if(light_type == 1)
 	{
-		lDir = normalize(l_data - vPos.xyz);
-		attenuation = 1.0/distance(vPos.xyz, l_data);
+		lDir = normalize(vPos.xyz - l_data);
+		attenuation = 1.0/distance(vPos.xyz,l_data); //linear falloff
+
 	}
-
-
 	// calculate our lighting factors
 	float lamb = calc_lambert(normal, lDir);
-	float ambi = 1;	
-
-	float spec = calc_phong(normal, lDir, normalize(view[3].xyz - vPos.xyz), gloss);
-
+	float ambi = 1;
+	float testSpec = 4;
+	if(vPos.x<0) testSpec = 16;
+	float spec = calc_phong(normal, lDir, normalize(view[0].xyz - vPos),gloss);
 	// calculate color terms
-	vec4 outAmbient  = diffuse * ambi * l_ambient;
-	outDiffuse  = diffuse * lamb * l_color * l_intensity * attenuation;
-	outSpecular = specular * spec * l_color * l_intensity;
+	vec4 outAmbient = diffuse * ambi * l_ambient;
+	 outDiffuse = diffuse * lamb * l_color * l_intensity * attenuation;
+	 outSpecular = specular * spec * l_color * l_intensity;
 
 	outNormal = vec4(normal,0);
 
 	outFinal = outAmbient + outDiffuse + outSpecular;
-	
+	//outColor = outSpecular;
+	//outColor = vec4(normal,1); // Test if they work!
 }
 
 
@@ -78,13 +77,13 @@ float calc_lambert(in vec3 N, in vec3 L)
 {
 	return max(0,dot(N,-L));
 }
-
-float calc_phong(in vec3 N, in vec3 L, in vec3 V, in float specPower)
+float calc_phong(in vec3 N, in vec3 L, in vec3 V, in float SpecPower)
 {
-	if (dot(N,-L) <= 0) return 0;
 
-	vec3 R = reflect(L, N);
-	float base = max(0,dot(V, -R));
+	if(dot(N,-L) <= 0) return 0;
 
-	return pow(base, specPower);
+	vec3 R = reflect(-L,N);
+	return pow(max(0,dot(V,-R)), SpecPower);
+
+
 }

@@ -33,30 +33,65 @@
     <None Include="mvplite.frag">
       <Filter>Source Files</Filter>
     </None>
-    <None Include="point.vert" />
-    <None Include="point.frag" />
-    <None Include="lambert.frag" />
-    <None Include="lambert.vert" />
-    <None Include="standard.vert" />
-    <None Include="standard.frag" />
-    <None Include="quad.vert" />
-    <None Include="quad.frag" />
-    <None Include="shadow.vert" />
-    <None Include="shadow.frag" />
-    <None Include="direct.vert" />
-    <None Include="direct.frag" />
-    <None Include="gpass.frag" />
-    <None Include="gpass.vert" />
-    <None Include="cpass.vert" />
-    <None Include="cpass.frag" />
-    <None Include="lpassD.frag" />
-    <None Include="lpassD.vert" />
-    <None Include="cubemap.frag" />
-    <None Include="cubemap.vert" />
-    <None Include="reflectSky.vert" />
-    <None Include="reflectSky.frag" />
-    <None Include="refractSky.vert" />
-    <None Include="refractSky.frag" />
-    <None Include="advection.vert" />
+    <None Include="cpass.frag">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="cpass.vert">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="direct.frag">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="direct.vert">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="gpass.frag">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="gpass.vert">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="lambert.frag">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="lambert.vert">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="lpassD.frag">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="lpassD.vert">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="quad.frag">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="quad.vert">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="shadow.frag">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="shadow.vert">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="standard.frag">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="standard.vert">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="emit.frag">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="emit.vert">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="SkyBoxCubeMap.vert">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="SkyBoxCubeMap.frag">
+      <Filter>Source Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

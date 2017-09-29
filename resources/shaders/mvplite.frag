@@ -1,12 +1,17 @@
 #version 450
 
-flat in vec2 vUV;
-
+in vec2 vUV;
+in vec4 vNormal;
 layout (location = 3) uniform sampler2D diffuse;
 
 out vec4 outColor;
 
 void main()
 {
-    outColor = texture(diffuse, vUV);	
+	vec3 L = normalize(vec3(1,-1,0));
+	vec3 N = vNormal.xyz;
+
+	float lamb = dot(N,-L);
+	outColor = lamb*texture(diffuse, vUV);
+
 }

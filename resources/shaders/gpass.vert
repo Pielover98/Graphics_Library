@@ -1,4 +1,3 @@
-
 #version 450
 
 // vertex attributes
@@ -27,4 +26,4 @@ void main()
 	vTBN = view * model * mat4(tangent, bitangent, normal, vec4(0,0,0,0));
 	vUV  = texcoord;
 	vPos = (view * model * position).xyz;
-}
+}                                    
